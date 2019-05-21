@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">TensorflowApp</string>
+    <string name="choose_photo_from_gallery">Choose photo from gallery</string>
+</resources>
