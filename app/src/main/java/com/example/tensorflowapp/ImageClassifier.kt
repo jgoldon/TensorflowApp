@@ -2,13 +2,12 @@ package com.example.tensorflowapp
 
 import android.content.res.AssetManager
 import android.graphics.Bitmap
-import com.example.tensorflowapp.Constants.DIM_BATCH_SIZE
-import com.example.tensorflowapp.Constants.DIM_IMG_SIZE_X
-import com.example.tensorflowapp.Constants.DIM_IMG_SIZE_Y
-import com.example.tensorflowapp.Constants.DIM_PIXEL_SIZE
+import com.example.tensorflowapp.Constants.BATCH_SIZE
+import com.example.tensorflowapp.Constants.IMG_SIZE_X
+import com.example.tensorflowapp.Constants.IMG_SIZE_Y
+import com.example.tensorflowapp.Constants.PIXEL_SIZE
 import com.example.tensorflowapp.Constants.INPUT_SIZE
 import com.example.tensorflowapp.Constants.LABEL_PATH
-import com.example.tensorflowapp.Constants.MAX_RESULTS
 import com.example.tensorflowapp.Constants.MODEL_PATH
 import io.reactivex.Single
 import org.tensorflow.lite.Interpreter
@@ -42,7 +41,7 @@ class ImageClassifier constructor(private val assetManager: AssetManager) {
             throw RuntimeException("Problem reading label file!", e)
         }
         labelProb = Array(1) { ByteArray(labels.size) }
-        imgData = ByteBuffer.allocateDirect(DIM_BATCH_SIZE * DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE)
+        imgData = ByteBuffer.allocateDirect(BATCH_SIZE * IMG_SIZE_X * IMG_SIZE_Y * PIXEL_SIZE)
         imgData.order(ByteOrder.nativeOrder())
         try {
             interpreter = Interpreter(loadModelFile(assetManager, MODEL_PATH))
@@ -55,8 +54,8 @@ class ImageClassifier constructor(private val assetManager: AssetManager) {
         imgData.rewind()
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         var pixel = 0
-        for (i in 0 until DIM_IMG_SIZE_X) {
-            for (j in 0 until DIM_IMG_SIZE_Y) {
+        for (i in 0 until IMG_SIZE_X) {
+            for (j in 0 until IMG_SIZE_Y) {
                 val value = intValues[pixel++]
                 imgData.put((value shr 16 and 0xFF).toByte())
                 imgData.put((value shr 8 and 0xFF).toByte())
@@ -86,9 +85,7 @@ class ImageClassifier constructor(private val assetManager: AssetManager) {
                 pq.add(Result(if (labels.size > i) labels[i] else "unknown", labelProb[0][i].toFloat()))
             }
             val recognitions = ArrayList<Result>()
-//            recognitions.addAll(pq.filter { it.confidence!! > 0})
-            val recognitionsSize = Math.min(pq.size, MAX_RESULTS)
-            for (i in 0 until recognitionsSize) recognitions.add(pq.poll())
+            recognitions.addAll(pq.filter { it.confidence!! > 1})
             return@flatMap Single.just(recognitions)
         }
     }
